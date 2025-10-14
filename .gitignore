@@ -1,0 +1,21 @@
+# PlatformIO / VS Code
+.pio/
+.vscode/
+.idea/
+.vs/
+.clangd/
+.cache/
+cmake-build-*/
+**/.DS_Store
+
+# Arduino/Build artifacts
+build/
+*.bin
+*.elf
+*.map
+
+# Secrets & keys
+include/secrets.h
+*.pem
+*.crt
+*.key
