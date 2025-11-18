@@ -329,21 +329,36 @@ static void handleWsText(const String& s) {
     return;                                                          // Done
   }
 
-  // Turret command: {"cmd":"turret","v":-1..1}
-  if (s.indexOf("\"cmd\":\"turret\"") >= 0) {                        // Turret
-    // Default
-    float v = 0;                                                     // Default
-    // Extract "v" value (very simple parse)
-    int iv = s.indexOf("\"v\""); if (iv >= 0) { int c = s.indexOf(':', iv); if (c >= 0) v = s.substring(c+1).toFloat(); } // Parse v
-    // Clamp for safety
-    v = fmaxf(-1.f, fminf(1.f, v));                                  // Clamp v
-    // Log for clarity
-    Serial0.printf("[MOT] turret v=%.3f (enabled=%d)\n", v, motors.isEnabled()); // Debug
-    // Apply turret value (does nothing if not enabled)
-    motors.setTurret(v);                                             // Drive turret
-    // Exit
-    return;                                                          // Done
+// Turret command: accept {"cmd":"turret","speed":-1..1} OR {"cmd":"turret","v":-1..1}
+if (s.indexOf("\"cmd\":\"turret\"") >= 0) {        // Detect a turret command
+  float v = 0.0f;                                  // Default to 0 if no value found
+
+  // Try to find "speed" first (matches your Unity sender)
+  int is = s.indexOf("\"speed\"");                 // Look for "speed"
+  if (is >= 0) {                                   // If found
+    int c = s.indexOf(':', is);                    // Find the colon after "speed"
+    if (c >= 0) v = s.substring(c + 1).toFloat();  // Convert the substring to float
+  } else {
+    // Fallback to legacy "v" key if "speed" is not present
+    int iv = s.indexOf("\"v\"");                   // Look for "v"
+    if (iv >= 0) {                                 // If found
+      int c = s.indexOf(':', iv);                  // Find the colon after "v"
+      if (c >= 0) v = s.substring(c + 1).toFloat();// Convert the substring to float
+    }
   }
+
+  // Clamp to the valid range [-1..+1]
+  v = fmaxf(-1.0f, fminf(1.0f, v));               // Keep value in range
+
+  // Log the parsed value and whether motors are enabled
+  Serial0.printf("[MOT] turret v=%.3f (enabled=%d)\n", v, motors.isEnabled());
+
+  // Apply to turret H-bridge (does nothing if not enabled)
+  motors.setTurret(v);                              // Drive turret channels
+
+  // Done handling this message
+  return;
+}
 }
 
 // ---------- Connect WebSocket (simple blocking retry) ----------
